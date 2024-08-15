@@ -1,4 +1,4 @@
-module github.com/Nomango/diffparser
+module github.com/vitrifi/diffparser
 
 go 1.12
 

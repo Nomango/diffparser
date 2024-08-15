@@ -1,6 +1,6 @@
 DiffParser
 ===========
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/Nomango/diffparser)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/vitrifi/diffparser)
 
 DiffParser is a Golang package which parse's a git diff.
 
@@ -8,7 +8,7 @@ Install
 -------
 
 ```sh
-go get github.com/Nomango/diffparser
+go get github.com/vitrifi/diffparser
 ```
 
 Usage Example
@@ -19,7 +19,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/Nomango/diffparser"
+	"github.com/vitrifi/diffparser"
 )
 
 // error handling left out for brevity
