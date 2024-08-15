@@ -170,7 +170,20 @@ func Parse(diffString string) (*Diff, error) {
 	return ParseStream(strings.NewReader(diffString))
 }
 
+type ScannerOption func(b *bufio.Scanner)
+
+func ScanBufferSize(MaxScanTokenSize int) ScannerOption {
+	return func(s *bufio.Scanner) {
+		buf := make([]byte, 0, bufio.MaxScanTokenSize)
+		s.Buffer(buf, MaxScanTokenSize)
+	}
+}
+
 func ParseStream(diffStream io.Reader) (*Diff, error) {
+	return ParseStreamWithOptions(diffStream, ScanBufferSize(bufio.MaxScanTokenSize))
+}
+
+func ParseStreamWithOptions(diffStream io.Reader, opts ...ScannerOption) (*Diff, error) {
 	var (
 		diff = Diff{}
 
@@ -184,6 +197,11 @@ func ParseStream(diffStream io.Reader) (*Diff, error) {
 		firstHunkInFile bool
 	)
 	scanner := bufio.NewScanner(diffStream)
+
+	for _, opt := range opts {
+		opt(scanner)
+	}
+
 	// Parse each line of diff.
 	for scanner.Scan() {
 		l := scanner.Text()
