@@ -18,14 +18,15 @@ Usage Example
 package main
 
 import (
-	"fmt"
+	"os"
 	"github.com/vitrifi/diffparser"
 )
 
 // error handling left out for brevity
 func main() {
-	byt, _ := ioutil.ReadFile("example.diff")
-	diff, _ := diffparser.Parse(string(byt))
+	f, _ := os.Open("example.diff")
+	defer f.Close()
+	diff, _ := diffparser.ParseStream(f)
 
 	// You now have a slice of files from the diff,
 	file := diff.Files[0]

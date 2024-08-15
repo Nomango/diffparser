@@ -1,10 +1,13 @@
 // Copyright (c) 2015 Jesse Meek <https://github.com/waigani>
+// Copyright Vitrifi Limited.
 // This program is Free Software see LICENSE file for details.
 
 package diffparser
 
 import (
+	"bufio"
 	"errors"
+	"io"
 	"regexp"
 	"strconv"
 	"strings"
@@ -158,17 +161,18 @@ const (
 )
 
 var (
-	reinReg       = regexp.MustCompile(`^index .+$`)
-	rempReg       = regexp.MustCompile(`^(-|\+){3} .+$`)
 	hunkHeaderReg = regexp.MustCompile(`@@ \-(\d+),?(\d+)? \+(\d+),?(\d+)? @@ ?(.+)?`)
 )
 
 // Parse takes a diff, such as produced by "git diff", and parses it into a
 // Diff struct.
 func Parse(diffString string) (*Diff, error) {
+	return ParseStream(strings.NewReader(diffString))
+}
+
+func ParseStream(diffStream io.Reader) (*Diff, error) {
 	var (
-		diff  = Diff{Raw: diffString}
-		lines = strings.Split(diffString, "\n")
+		diff = Diff{}
 
 		file         *DiffFile
 		hunk         *DiffHunk
@@ -179,8 +183,11 @@ func Parse(diffString string) (*Diff, error) {
 		diffPosCount    int
 		firstHunkInFile bool
 	)
+	scanner := bufio.NewScanner(diffStream)
 	// Parse each line of diff.
-	for idx, l := range lines {
+	for scanner.Scan() {
+		l := scanner.Text()
+		diff.Raw += l + "\n"
 		diffPosCount++
 		switch {
 		case strings.HasPrefix(l, "diff "):
@@ -188,34 +195,28 @@ func Parse(diffString string) (*Diff, error) {
 
 			// Start a new file.
 			file = &DiffFile{}
-			header := l
-			if len(lines) > idx+3 {
-				index := lines[idx+1]
-				if reinReg.MatchString(index) {
-					header = header + "\n" + index
-				}
-				mp1 := lines[idx+2]
-				mp2 := lines[idx+3]
-				if rempReg.MatchString(mp1) && rempReg.MatchString(mp2) {
-					header = header + "\n" + mp1 + "\n" + mp2
-				}
-			}
-			file.DiffHeader = header
+			file.DiffHeader = l
 			diff.Files = append(diff.Files, file)
 			firstHunkInFile = true
 
 			// File mode.
 			file.Mode = FileModeModified
+		case strings.HasPrefix(l, "index "):
+			file.DiffHeader += "\n" + l
 		case l == "+++ /dev/null":
+			file.DiffHeader += "\n" + l
 			file.Mode = FileModeDeleted
 		case l == "--- /dev/null":
+			file.DiffHeader += "\n" + l
 			file.Mode = FileModeNew
 		case strings.HasPrefix(l, similarityPrefix):
 			file.Mode = FileModeRenamed
 			file.SimilarityIndex, _ = strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(l, similarityPrefix), "%"))
 		case strings.HasPrefix(l, oldFilePrefix):
+			file.DiffHeader += "\n" + l
 			file.OrigName = parseFileName(strings.TrimPrefix(l, oldFilePrefix))
 		case strings.HasPrefix(l, newFilePrefix):
+			file.DiffHeader += "\n" + l
 			file.NewName = parseFileName(strings.TrimPrefix(l, newFilePrefix))
 		case strings.HasPrefix(l, renameFromPrefix):
 			file.OrigName = parseFileName(strings.TrimPrefix(l, renameFromPrefix))
@@ -326,7 +327,7 @@ func Parse(diffString string) (*Diff, error) {
 		}
 	}
 
-	return &diff, nil
+	return &diff, scanner.Err()
 }
 
 func parseFileName(filenameWithPrefix string) string {
