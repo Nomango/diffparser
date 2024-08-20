@@ -1,6 +1,6 @@
 DiffParser
 ===========
-[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/Nomango/diffparser)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-blue.svg)](https://godoc.org/github.com/vitrifi/diffparser)
 
 DiffParser is a Golang package which parse's a git diff.
 
@@ -8,7 +8,7 @@ Install
 -------
 
 ```sh
-go get github.com/Nomango/diffparser
+go get github.com/vitrifi/diffparser
 ```
 
 Usage Example
@@ -18,14 +18,15 @@ Usage Example
 package main
 
 import (
-	"fmt"
-	"github.com/Nomango/diffparser"
+	"os"
+	"github.com/vitrifi/diffparser"
 )
 
 // error handling left out for brevity
 func main() {
-	byt, _ := ioutil.ReadFile("example.diff")
-	diff, _ := diffparser.Parse(string(byt))
+	f, _ := os.Open("example.diff")
+	defer f.Close()
+	diff, _ := diffparser.ParseStream(f)
 
 	// You now have a slice of files from the diff,
 	file := diff.Files[0]
